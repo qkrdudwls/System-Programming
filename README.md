@@ -1,4 +1,4 @@
-#2024-1 System Programming Project
+2024-1 System Programming Project
 
 자동 속도 조절 시스템
 
