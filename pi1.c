@@ -28,14 +28,13 @@ static uint32_t CLOCK = 1000000;
 static uint16_t DELAY = 5;
 static const char* GPIO_EXPORT = "/sys/class/gpio/export";
 static const char* GPIO_UNEXPORT = "/sys/class/gpio/unexport";
-static const char* GPIO_LED_PIN = "18"; // BCM ÇÉ ¹øÈ£
+static const char* GPIO_LED_PIN = "18"; // BCM í•€ ë²ˆí˜¸
 static char GPIO_LED_DIRECTION[50];
 static char GPIO_LED_VALUE[50];
 
 float Distance, Angle;
 pthread_mutex_t lock;
 
-// ÇÔ¼ö ÇÁ·ÎÅäÅ¸ÀÔ ¼±¾ğ
 void gpio_unexport(int pin);
 void gpio_export(int pin);
 void gpio_set_direction(int pin, const char* direction);
@@ -116,7 +115,7 @@ void gpio_export(int pin) {
     if (write(fd, buffer, len) == -1) {
         if (errno == EBUSY) {
             printf("GPIO %d is already exported, unexporting...\n", pin);
-            gpio_unexport(pin);  // ÀÌ¹Ì ³»º¸³»Áø °æ¿ì ¸ÕÀú ÇØÁ¦
+            gpio_unexport(pin);  // ì´ë¯¸ ë‚´ë³´ë‚´ì§„ ê²½ìš° ë¨¼ì € í•´ì œ
             if (write(fd, buffer, len) == -1) {
                 perror("GPIO export write error after unexport");
                 exit(EXIT_FAILURE);
@@ -196,6 +195,7 @@ void gpio_write(int pin, int value) {
     //printf("GPIO value set to %d for pin %d\n", value, pin);
 }
 
+//spi thread ì‘ì—…
 void* spi_thread(void* arg) {
     int fd = open(DEVICE, O_RDWR);
     if (fd <= 0) {
@@ -211,34 +211,34 @@ void* spi_thread(void* arg) {
     snprintf(GPIO_LED_DIRECTION, sizeof(GPIO_LED_DIRECTION), "/sys/class/gpio/gpio%s/direction", GPIO_LED_PIN);
     snprintf(GPIO_LED_VALUE, sizeof(GPIO_LED_VALUE), "/sys/class/gpio/gpio%s/value", GPIO_LED_PIN);
 
-    // GPIO ÃÊ±â ¼³Á¤
-    gpio_unexport(atoi(GPIO_LED_PIN)); // ±âÁ¸ ¼³Á¤ ÇØÁ¦
-    gpio_export(atoi(GPIO_LED_PIN)); // GPIO ÇÉ ³»º¸³»±â
-    gpio_set_direction(atoi(GPIO_LED_PIN), "out"); // GPIO ÇÉ ¹æÇâ ¼³Á¤
+    // GPIO ì´ˆê¸° ì„¤ì •
+    gpio_unexport(atoi(GPIO_LED_PIN)); // ê¸°ì¡´ ì„¤ì • í•´ì œ
+    gpio_export(atoi(GPIO_LED_PIN)); // GPIO í•€ ë‚´ë³´ë‚´ê¸°
+    gpio_set_direction(atoi(GPIO_LED_PIN), "out"); // GPIO í•€ ë°©í–¥ ì„¤ì •
 
-    time_t last_led_check = time(NULL); // ¸¶Áö¸· LED È®ÀÎ ½Ã°£ ÃÊ±âÈ­
+    time_t last_led_check = time(NULL); // ë§ˆì§€ë§‰ LED í™•ì¸ ì‹œê°„ ì´ˆê¸°í™”
 
     while (1) {
         int value = readadc(fd, 0);
         // printf("SPI value: %d\n", value);
 
-         // ÇöÀç ½Ã°£ È®ÀÎ
+         // í˜„ì¬ ì‹œê°„ í™•ì¸
         time_t current_time = time(NULL);
 
-        // ¸¶Áö¸· LED È®ÀÎ ½Ã°£¿¡¼­ 10ÃÊ°¡ Áö³ª¸é LED »óÅÂ È®ÀÎ
+        // ë§ˆì§€ë§‰ LED í™•ì¸ ì‹œê°„ì—ì„œ 10ì´ˆê°€ ì§€ë‚˜ë©´ LED ìƒíƒœ í™•ì¸
         if (current_time - last_led_check >= 10) {
             if (value <= 400) {
-                gpio_write(atoi(GPIO_LED_PIN), 1); // LED ÄÑ±â
+                gpio_write(atoi(GPIO_LED_PIN), 1); // LED ì¼œê¸°
             }
             else {
-                gpio_write(atoi(GPIO_LED_PIN), 0); // LED ²ô±â
+                gpio_write(atoi(GPIO_LED_PIN), 0); // LED ë„ê¸°
             }
 
-            // LED È®ÀÎ ½Ã°£ °»½Å
+            // LED í™•ì¸ ì‹œê°„ ê°±ì‹ 
             last_led_check = current_time;
         }
 
-        usleep(5000); // 5ms ´ë±â
+        usleep(5000); // 5ms ëŒ€ê¸°
     }
 
     close(fd);
@@ -256,10 +256,10 @@ void set_motor(int motor, int speed) {
         in2 = IN4;
     }
     else {
-        return; // Àß¸øµÈ ¸ğÅÍ ¹øÈ£
+        return; // ì˜ëª»ëœ ëª¨í„° ë²ˆí˜¸
     }
 
-    int duty_cycle = abs(speed); // µàÆ¼ »çÀÌÅ¬ (0-100)
+    int duty_cycle = abs(speed); // ë“€í‹° ì‚¬ì´í´ (0-100)
 
     for (int i = 0; i < 100; i++) {
         if (i < duty_cycle) {
@@ -276,7 +276,7 @@ void set_motor(int motor, int speed) {
             gpio_write(in1, 0);
             gpio_write(in2, 0);
         }
-        usleep(50); // 50us ÁÖ±â (20kHz ÁÖÆÄ¼ö)
+        usleep(50); // 50us 
     }
 }
 
@@ -287,35 +287,35 @@ void* socket_thread(void* arg) {
     char buffer[BUF_SIZE] = { 0 };
     int opt = 1;
 
-    // Æ÷Æ®¸¦ »ç¿ë ÁßÀÎ ÇÁ·Î¼¼½º Á¾·á
+    // í¬íŠ¸ë¥¼ ì‚¬ìš© ì¤‘ì¸ í”„ë¡œì„¸ìŠ¤ ì¢…ë£Œ
     kill_process_using_port(PORT);
 
-    // ¼ÒÄÏ »ı¼º
+    // ì†Œì¼“ ìƒì„±
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         return NULL;
     }
 
-    // ¼ÒÄÏ ¿É¼Ç ¼³Á¤: Æ÷Æ® Àç»ç¿ë °¡´É
+    // ì†Œì¼“ ì˜µì…˜ ì„¤ì •
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
         perror("setsockopt");
         close(server_fd);
         return NULL;
     }
 
-    // ÁÖ¼Ò ±¸Á¶Ã¼ ¼³Á¤
+    // ì£¼ì†Œ ì„¤ì •
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
 
-    // ¼ÒÄÏ¿¡ ÁÖ¼Ò ÇÒ´ç
+    // ì†Œì¼“ì— ì£¼ì†Œ í• ë‹¹
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
         perror("bind failed");
         close(server_fd);
         return NULL;
     }
 
-    // ¿¬°á ´ë±â »óÅÂ·Î ÀüÈ¯
+    // ì—°ê²° ëŒ€ê¸°
     if (listen(server_fd, 3) < 0) {
         perror("listen failed");
         close(server_fd);
@@ -324,30 +324,30 @@ void* socket_thread(void* arg) {
 
     printf("Server listening on port %d\n", PORT);
 
-    // Å¬¶óÀÌ¾ğÆ® ¿¬°á ¼ö¶ô
+    // í´ë¼ì´ì–¸íŠ¸ ì—°ê²° ìˆ˜ë½
     if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
         perror("accept failed");
         close(server_fd);
         return NULL;
     }
 
-    // GPIO ÃÊ±âÈ­
+    // GPIO ì´ˆê¸°í™”
     gpio_export(IN1);
     gpio_export(IN2);
     gpio_export(IN3);
     gpio_export(IN4);
 
-    gpio_set_direction(IN1, "out"); // ¼³Á¤À» Ãâ·ÂÀ¸·Î
-    gpio_set_direction(IN2, "out"); // ¼³Á¤À» Ãâ·ÂÀ¸·Î
-    gpio_set_direction(IN3, "out"); // ¼³Á¤À» Ãâ·ÂÀ¸·Î
-    gpio_set_direction(IN4, "out"); // ¼³Á¤À» Ãâ·ÂÀ¸·Î
+    gpio_set_direction(IN1, "out"); // ì„¤ì •ì„ ì¶œë ¥ìœ¼ë¡œ
+    gpio_set_direction(IN2, "out"); // ì„¤ì •ì„ ì¶œë ¥ìœ¼ë¡œ
+    gpio_set_direction(IN3, "out"); // ì„¤ì •ì„ ì¶œë ¥ìœ¼ë¡œ
+    gpio_set_direction(IN4, "out"); // ì„¤ì •ì„ ì¶œë ¥ìœ¼ë¡œ
 
     while (1) {
         int valread = read(new_socket, buffer, BUF_SIZE);
         if (valread > 0) {
-            buffer[valread] = '\0'; // null-terminate the buffer
+            buffer[valread] = '\0'; // ë°›ì€ ë¬¸ìì—´ ì¢…ë£Œ ì•Œë¦¼
 
-            // ¹®ÀÚ¿­¿¡¼­ Distance¿Í Angle °ª ÃßÃâ
+            // ë¬¸ìì—´ì—ì„œ Distanceì™€ Angle ê°’ ì¶”ì¶œ
             pthread_mutex_lock(&lock);
             if (sscanf(buffer, "Distance: %f cm, Tilt Angle: %f degrees", &Distance, &Angle) == 2) {
                 //        printf("Distance: %.2f cm, Angle: %.2f degrees\n", Distance, Angle);
@@ -358,18 +358,18 @@ void* socket_thread(void* arg) {
                     //  printf("Motors stopped due to close distance.\n");
                 }
                 else if (Angle < -30 || Angle > 30) {
-                    set_motor(1, 65);  // 65% ¼Óµµ
-                    set_motor(2, 65);  // 65% ¼Óµµ
+                    set_motor(1, 65);  // 65% ì†ë„
+                    set_motor(2, 65);  // 65% ì†ë„
                     //  printf("Motors running at reduced speed due to angle.\n");
                 }
                 else if (Angle < -15 || Angle > 15) {
-                    set_motor(1, 75);  // 75% ¼Óµµ
-                    set_motor(2, 75);  // 75% ¼Óµµ
+                    set_motor(1, 75);  // 75% ì†ë„
+                    set_motor(2, 75);  // 75% ì†ë„
                     //  printf("Motors running at moderate speed due to angle.\n");
                 }
                 else {
-                    set_motor(1, 95);  // Á¤»ó ¼Óµµ
-                    set_motor(2, 95);  // Á¤»ó ¼Óµµ
+                    set_motor(1, 95);  // ì •ìƒ ì†ë„
+                    set_motor(2, 95);  // ì •ìƒ ì†ë„
                     //  printf("Motors running normally.\n");
                 }
             }
@@ -378,14 +378,14 @@ void* socket_thread(void* arg) {
             }
             pthread_mutex_unlock(&lock);
         }
-        usleep(5000); // 5ms ´ë±â
+        usleep(5000); // 5ms ëŒ€ê¸°
     }
 
-    // Å¬¶óÀÌ¾ğÆ® ¼ÒÄÏ°ú ¼­¹ö ¼ÒÄÏ ´İ±â
+    // í´ë¼ì´ì–¸íŠ¸ ì†Œì¼“ê³¼ ì„œë²„ ì†Œì¼“ ë‹«ê¸°
     close(new_socket);
     close(server_fd);
 
-    // GPIO ÇØÁ¦
+    // GPIO í•´ì œ
     gpio_unexport(IN1);
     gpio_unexport(IN2);
     gpio_unexport(IN3);
@@ -397,28 +397,29 @@ void* socket_thread(void* arg) {
 int main() {
     pthread_t spi_tid, socket_tid;
 
-    // ¹ÂÅØ½º ÃÊ±âÈ­
+    // ë®¤í…ìŠ¤ ì´ˆê¸°í™”
     if (pthread_mutex_init(&lock, NULL) != 0) {
         perror("pthread_mutex_init failed");
         return 1;
     }
 
-    // ½º·¹µå »ı¼º
+    // spi thread 
     if (pthread_create(&spi_tid, NULL, spi_thread, NULL) != 0) {
         perror("pthread_create for spi_thread failed");
         return 1;
     }
 
+    // dc ëª¨í„° + server thread
     if (pthread_create(&socket_tid, NULL, socket_thread, NULL) != 0) {
         perror("pthread_create for socket_thread failed");
         return 1;
     }
 
-    // ½º·¹µå Á¾·á ´ë±â
+    // thread ì¢…ë£Œ ëŒ€ê¸°
     pthread_join(spi_tid, NULL);
     pthread_join(socket_tid, NULL);
 
-    // ¹ÂÅØ½º ÇØÁ¦
+    // ë®¤í…ìŠ¤ í•´ì œ
     pthread_mutex_destroy(&lock);
 
     return 0;
