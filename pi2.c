@@ -115,7 +115,7 @@ int main(int argc, char const* argv[]) {
 
     while (1) {
         float distance = getDistance(); // 초음파 센서로 거리 측정
-        printf("�Ÿ�: %.2f cm\n", distance); // 거리 출력
+        printf("거리: %.2f cm\n", distance); // 거리 출력
 
         float accelX, accelY, accelZ;
         MPU6050_read(&accelX, &accelY, &accelZ); // MPU6050 가속도 데이터 읽기
